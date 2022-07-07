@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     private NotesAdapter adapter;
     private NotesDatabase database;
-    private Handler handler = new Handler(Looper.getMainLooper());
+//    private Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initViews();
         database = NotesDatabase.newInstance(this);
-        getData();
+//        getData();
         adapter = new NotesAdapter(notes);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -56,6 +57,16 @@ public class MainActivity extends AppCompatActivity {
                 removeNote(position);
             }
         });
+
+        database.notesDAO().getAllNotes().observe(this, new Observer<List<Note>>() {
+            @Override
+            public void onChanged(List<Note> notesFromDB) {
+                notes.clear();
+                notes.addAll(notesFromDB);
+                adapter.notifyDataSetChanged();
+            }
+        });
+
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
                 0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -71,11 +82,11 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        getData();
-    }
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        getData();
+//    }
 
     private void initViews() {
         recyclerView = findViewById(R.id.recycler_view);
@@ -86,16 +97,16 @@ public class MainActivity extends AppCompatActivity {
         Note note = notes.get(position);
         new Thread(() -> {
             database.notesDAO().deleteNote(note);
-            getData();
-            handler.post(() -> adapter.notifyDataSetChanged());
+//            getData();
+//            handler.post(() -> adapter.notifyDataSetChanged());
         }).start();
     }
 
-    private void getData() {
-        new Thread(() -> {
-            List<Note> notesFromDB = database.notesDAO().getAllNotes();
-            notes.clear();
-            notes.addAll(notesFromDB);
-        }).start();
-    }
+//    private void getData() {
+//        new Thread(() -> {
+//            List<Note> notesFromDB = database.notesDAO().getAllNotes();
+//            notes.clear();
+//            notes.addAll(notesFromDB);
+//        }).start();
+//    }
 }

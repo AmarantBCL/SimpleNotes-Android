@@ -1,18 +1,12 @@
 package com.example.android.notes;
 
-import android.annotation.SuppressLint;
-import android.content.ContentValues;
-import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,35 +24,21 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton fab;
 
     private NotesAdapter adapter;
-    private NotesDatabase database;
-//    private Handler handler = new Handler(Looper.getMainLooper());
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initViews();
-        database = NotesDatabase.newInstance(this);
-//        getData();
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         adapter = new NotesAdapter(notes);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
         fab.setOnClickListener(v -> {
             startActivity(AddNoteActivity.newIntent(MainActivity.this));
         });
-        adapter.setOnItemClickListener(new NotesAdapter.OnItemClickListener() {
-            @Override
-            public void onClick(int position) {
-                Toast.makeText(MainActivity.this, "Click!", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onLongClick(int position) {
-                removeNote(position);
-            }
-        });
-
-        database.notesDAO().getAllNotes().observe(this, new Observer<List<Note>>() {
+        viewModel.getNotes().observe(this, new Observer<List<Note>>() {
             @Override
             public void onChanged(List<Note> notesFromDB) {
                 notes.clear();
@@ -66,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
             }
         });
-
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(
                 0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
@@ -76,37 +55,15 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                removeNote(viewHolder.getAdapterPosition());
+                Note note = notes.get(viewHolder.getAdapterPosition());
+                viewModel.removeNote(note);
             }
         });
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        getData();
-//    }
-
     private void initViews() {
         recyclerView = findViewById(R.id.recycler_view);
         fab = findViewById(R.id.fab);
     }
-
-    private void removeNote(int position) {
-        Note note = notes.get(position);
-        new Thread(() -> {
-            database.notesDAO().deleteNote(note);
-//            getData();
-//            handler.post(() -> adapter.notifyDataSetChanged());
-        }).start();
-    }
-
-//    private void getData() {
-//        new Thread(() -> {
-//            List<Note> notesFromDB = database.notesDAO().getAllNotes();
-//            notes.clear();
-//            notes.addAll(notesFromDB);
-//        }).start();
-//    }
 }

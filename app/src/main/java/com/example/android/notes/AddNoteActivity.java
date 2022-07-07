@@ -1,6 +1,8 @@
 package com.example.android.notes;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,20 +25,26 @@ public class AddNoteActivity extends AppCompatActivity {
     private RadioGroup radioGroup;
     private Spinner spinner;
 
-    private NotesDatabase database;
-    private Handler handler = new Handler(Looper.getMainLooper());
+    private AddNoteViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
         initViews();
-        database = NotesDatabase.newInstance(this);
+        viewModel = new ViewModelProvider(this).get(AddNoteViewModel.class);
+        viewModel.getShouldCloseScreen().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean shouldClose) {
+                if (shouldClose) {
+                    finish();
+                }
+            }
+        });
         buttonAdd.setOnClickListener(v -> {
             addNote();
         });
     }
-
 
     public static Intent newIntent(Context context) {
         return new Intent(context, AddNoteActivity.class);
@@ -59,10 +67,7 @@ public class AddNoteActivity extends AppCompatActivity {
         int priority = Integer.parseInt(radioButton.getText().toString());
         if (isFilled(title, desc)) {
             Note note = new Note(title, desc, dayOfWeek, priority);
-            new Thread(() -> {
-                database.notesDAO().addNote(note);
-                handler.post(() -> finish());
-            }).start();
+            viewModel.saveNote(note);
         } else {
             Toast.makeText(this, R.string.fields_must_be_filled, Toast.LENGTH_SHORT).show();
         }

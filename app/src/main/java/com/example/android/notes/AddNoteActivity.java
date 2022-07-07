@@ -21,15 +21,14 @@ public class AddNoteActivity extends AppCompatActivity {
     private RadioGroup radioGroup;
     private Spinner spinner;
 
-    private NotesDBHelper dbHelper;
-    private SQLiteDatabase database;
+    private NotesDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
         initViews();
-        initDatabase();
+        database = NotesDatabase.newInstance(this);
         buttonAdd.setOnClickListener(v -> {
             addNote();
         });
@@ -38,11 +37,6 @@ public class AddNoteActivity extends AppCompatActivity {
 
     public static Intent newIntent(Context context) {
         return new Intent(context, AddNoteActivity.class);
-    }
-
-    private void initDatabase() {
-        dbHelper = new NotesDBHelper(this);
-        database = dbHelper.getWritableDatabase();
     }
 
     private void initViews() {
@@ -61,12 +55,7 @@ public class AddNoteActivity extends AppCompatActivity {
         RadioButton radioButton = findViewById(radioButtonId);
         int priority = Integer.parseInt(radioButton.getText().toString());
         if (isFilled(title, desc)) {
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(NotesContract.NotesEntry.COLUMN_TITLE, title);
-            contentValues.put(NotesContract.NotesEntry.COLUMN_DESCRIPTION, desc);
-            contentValues.put(NotesContract.NotesEntry.COLUMN_DAY_OF_WEEK, dayOfWeek + 1);
-            contentValues.put(NotesContract.NotesEntry.COLUMN_PRIORITY, priority);
-            database.insert(NotesContract.NotesEntry.TABLE_NAME, null, contentValues);
+            database.notesDAO().addNote(new Note(title, desc, dayOfWeek, priority));
             Intent intent = new Intent(AddNoteActivity.this, MainActivity.class);
             startActivity(intent);
         } else {

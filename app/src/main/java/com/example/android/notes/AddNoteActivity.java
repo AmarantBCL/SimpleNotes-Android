@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -22,6 +24,7 @@ public class AddNoteActivity extends AppCompatActivity {
     private Spinner spinner;
 
     private NotesDatabase database;
+    private Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +58,11 @@ public class AddNoteActivity extends AppCompatActivity {
         RadioButton radioButton = findViewById(radioButtonId);
         int priority = Integer.parseInt(radioButton.getText().toString());
         if (isFilled(title, desc)) {
-            database.notesDAO().addNote(new Note(title, desc, dayOfWeek, priority));
-            Intent intent = new Intent(AddNoteActivity.this, MainActivity.class);
-            startActivity(intent);
+            Note note = new Note(title, desc, dayOfWeek, priority);
+            new Thread(() -> {
+                database.notesDAO().addNote(note);
+                handler.post(() -> finish());
+            }).start();
         } else {
             Toast.makeText(this, R.string.fields_must_be_filled, Toast.LENGTH_SHORT).show();
         }

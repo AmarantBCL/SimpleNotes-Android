@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     private NotesAdapter adapter;
     private NotesDatabase database;
+    private Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +71,12 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getData();
+    }
+
     private void initViews() {
         recyclerView = findViewById(R.id.recycler_view);
         fab = findViewById(R.id.fab);
@@ -75,14 +84,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void removeNote(int position) {
         Note note = notes.get(position);
-        database.notesDAO().deleteNote(note);
-        getData();
-        adapter.notifyDataSetChanged();
+        new Thread(() -> {
+            database.notesDAO().deleteNote(note);
+            getData();
+            handler.post(() -> adapter.notifyDataSetChanged());
+        }).start();
     }
 
     private void getData() {
-        List<Note> notesFromDB = database.notesDAO().getAllNotes();
-        notes.clear();
-        notes.addAll(notesFromDB);
+        new Thread(() -> {
+            List<Note> notesFromDB = database.notesDAO().getAllNotes();
+            notes.clear();
+            notes.addAll(notesFromDB);
+        }).start();
     }
 }
